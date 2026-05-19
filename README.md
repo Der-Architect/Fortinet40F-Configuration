@@ -2,6 +2,8 @@
 
 A step-by-step guide to configure the **Fortinet FortiGate 40F** for maximum security using VLAN segmentation in a small-to-medium business or home-lab environment.
 
+> **Important:** There is no permanently “perfect” firewall configuration. The strongest setup is a hardened baseline plus continuous patching, monitoring, and policy review.
+
 ---
 
 ## Table of Contents
@@ -22,6 +24,7 @@ A step-by-step guide to configure the **Fortinet FortiGate 40F** for maximum sec
 14. [Step 12 — Logging & SIEM Integration](#step-12--logging--siem-integration)
 15. [Step 13 — Scheduled Backups & Maintenance](#step-13--scheduled-backups--maintenance)
 16. [Maximum Security Hardening Checklist](#maximum-security-hardening-checklist)
+17. [Top Priority Controls (Fastest Secure Baseline)](#top-priority-controls-fastest-secure-baseline)
 
 ---
 
@@ -693,14 +696,15 @@ Log & Report → Alert Email
 ```
 System → Maintenance → Backup & Restore
   Schedule:  Daily
-  Destination:  FTP/SFT server or FortiCloud
+  Destination:  FTP/SFTP server or FortiCloud
   Encryption:  Enable (AES-256 passphrase)
 ```
 
 CLI alternative:
-```bash
-execute backup config ftp <filename> <FTP server> <user> <password>
-```
+
+- Prefer the scheduled GUI backup workflow with securely stored credentials.
+- Prefer key-based authentication (or certificate-based authentication where supported) for automated backup targets.
+- If you must run a manual CLI backup, avoid exposing credentials in shared terminals and rotate any temporary credentials immediately after use.
 
 ### 13.2 FortiGuard subscription renewal reminders
 
@@ -750,7 +754,7 @@ Use this checklist to verify your deployment meets maximum security standards:
 - [ ] Default-deny policy at the bottom of the policy list
 - [ ] Outbound policies apply NAT and security profiles
 - [ ] Inter-VLAN deny rules explicitly configured
-- [ ] Inbound WAN access only allows published services via VIPs/VIPs
+- [ ] Inbound WAN access only allows published services via VIPs
 - [ ] All policies have logging enabled
 
 ### Security Profiles
@@ -787,6 +791,24 @@ Use this checklist to verify your deployment meets maximum security standards:
 
 ---
 
+## Top Priority Controls (Fastest Secure Baseline)
+
+If you want the fastest path to a strong FortiGate 40F security posture, implement these first:
+
+1. **Update FortiOS and FortiGuard signatures** to current stable releases.
+2. **Segment network by VLAN** (Trusted, IoT, Guest, Management, DMZ) with default deny between zones.  
+   This is early priority because segmentation limits lateral movement even if one endpoint is compromised.
+3. **Restrict admin access to Management VLAN only** and enable **MFA** for all admin accounts.
+4. **Enable IPS + AV + Web Filter + DNS Filter** on all outbound policies.
+5. **Block DNS bypass** (external DNS and DoH where possible).
+6. **Use SSL deep inspection** on managed endpoints with deployed enterprise CA.
+7. **Enable full logging** and forward logs to FortiAnalyzer/SIEM.
+8. **Configure encrypted daily backups** and test restore procedures.
+
+Then review the full checklist monthly and after every major network change.
+
+---
+
 ## Quick Reference: Key CLI Commands
 
 ```bash
@@ -811,8 +833,8 @@ diagnose ips session list
 # Check CPU and memory
 get system performance status
 
-# Backup configuration to console
-execute backup config ftp daily-backup.conf <ftp-ip> ftpuser ftppass
+# Backup configuration
+# Use scheduled encrypted backup in GUI and avoid inline credentials in shared terminals.
 
 # Manually trigger FortiGuard update
 execute update-now
